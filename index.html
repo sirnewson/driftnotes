@@ -20,29 +20,24 @@
         .aspect-9-16 { aspect-ratio: 9 / 16; }
 
         /* Transitions for all interactive elements */
-        #preview-area, #preview-container, .color-swatch, .style-btn, .theme-btn, .ratio-btn, .font-btn {
+        #preview-area, #preview-container, .color-swatch, .style-btn, .theme-btn, .ratio-btn, .font-btn, .position-btn {
             transition: all 0.3s ease-in-out;
         }
         
         /* Style for the selected color swatch and style button */
-        .color-swatch.active, .style-btn.active {
-            box-shadow: 0 0 0 3px #3b82f6;
-            transform: scale(1.1);
+        .color-swatch.active, .style-btn.active, .position-btn.active {
+            box-shadow: 0 0 0 2px #3b82f6;
+            transform: scale(1.05);
         }
         .control-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         
-        /* Draggable Text Styles */
+        /* Text Styles */
         #preview-quote {
-            position: absolute;
-            touch-action: none; /* Prevents scrolling on touch devices while dragging */
-            padding: 1rem; /* Add some padding for easier grabbing */
             width: 90%; /* Forces the text to occupy a wider area, reducing line breaks */
         }
-        .cursor-grab { cursor: grab; }
-        .cursor-grabbing { cursor: grabbing; }
 
         /* Font Family Classes */
         .font-dm-sans { font-family: 'DM Sans', sans-serif; }
@@ -137,7 +132,6 @@
                             <div>
                                 <div class="flex justify-between items-center mb-2">
                                      <label for="quote-input" class="block text-sm font-medium text-gray-300">Quote</label>
-                                     <button id="reset-position-btn" class="text-xs text-blue-400 hover:text-blue-300 transition hidden">Reset Position</button>
                                     <span id="char-counter" class="text-sm text-gray-500">0/100</span>
                                 </div>
                                 <textarea id="quote-input" rows="4" maxlength="100" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Sometimes fear is a result of your courage."></textarea>
@@ -202,6 +196,15 @@
                                     <div class="color-picker-wrapper">
                                         <input type="color" id="text-color-picker" class="color-picker-input" value="#ffffff">
                                     </div>
+                                </div>
+                            </div>
+                             <!-- Text Position Selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Text Position</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button class="position-btn control-btn bg-gray-700 text-gray-300 font-semibold py-2 px-4 rounded-lg" data-position="start">Top</button>
+                                    <button class="position-btn control-btn bg-gray-700 text-gray-300 font-semibold py-2 px-4 rounded-lg" data-position="center">Center</button>
+                                    <button class="position-btn control-btn bg-gray-700 text-gray-300 font-semibold py-2 px-4 rounded-lg" data-position="end">Bottom</button>
                                 </div>
                             </div>
                         </div>
@@ -281,7 +284,7 @@
                         
                         <!-- Wrapper for the quote, allows it to grow and be a reference for dragging -->
                         <div id="quote-wrapper" class="relative flex-grow flex items-center justify-center">
-                            <p id="preview-quote" class="font-medium leading-snug text-center cursor-grab font-dm-sans"></p>
+                            <p id="preview-quote" class="font-medium leading-snug text-center font-dm-sans"></p>
                         </div>
 
                         <!-- Footer -->
@@ -316,7 +319,6 @@
             const bgUploadInput = document.getElementById('bg-upload-input');
             const bgUploadBtn = document.getElementById('bg-upload-btn');
             const bgClearBtn = document.getElementById('bg-clear-btn');
-            const resetPositionBtn = document.getElementById('reset-position-btn');
             const bgColorPicker = document.getElementById('bg-color-picker');
             const textColorPicker = document.getElementById('text-color-picker');
             const fontSelect = document.getElementById('font-select');
@@ -339,17 +341,12 @@
             const bgColorSwatches = document.querySelectorAll('.bg-swatch');
             const textColorSwatches = document.querySelectorAll('.text-swatch');
             const styleButtons = document.querySelectorAll('.style-btn');
+            const positionButtons = document.querySelectorAll('.position-btn');
 
             // --- State ---
             let currentSolidColor = '#141111';
             let currentRatio = '1-1';
             
-            // --- Draggable Text State ---
-            let isDragging = false;
-            let hasBeenDragged = false;
-            let dragOffsetX = 0;
-            let dragOffsetY = 0;
-
             // --- Functions ---
             
             function updateTimestamp() {
@@ -358,15 +355,6 @@
                 const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 previewDate.textContent = day;
                 previewTime.textContent = time;
-            }
-
-            function centerQuote() {
-                previewQuote.style.position = 'absolute';
-                previewQuote.style.left = '50%';
-                previewQuote.style.top = '50%';
-                previewQuote.style.transform = 'translate(-50%, -50%)';
-                hasBeenDragged = false;
-                resetPositionBtn.classList.add('hidden');
             }
 
             function autoAdjustQuoteFontSize() {
@@ -386,10 +374,6 @@
                 
                 fontSizeSlider.value = fontSize;
                 fontSizeValue.textContent = `${fontSize}px`;
-
-                if (!hasBeenDragged) {
-                    setTimeout(centerQuote, 0);
-                }
             }
 
             function updatePreview() {
@@ -441,6 +425,27 @@
                 setTimeout(autoAdjustQuoteFontSize, 50);
             }
 
+            function setTextPosition(position) {
+                positionButtons.forEach(btn => {
+                    const isActive = btn.dataset.position === position;
+                    btn.classList.toggle('active', isActive);
+                    btn.classList.toggle('bg-blue-600', isActive);
+                    btn.classList.toggle('text-white', isActive);
+                    btn.classList.toggle('bg-gray-700', !isActive);
+                    btn.classList.toggle('text-gray-300', !isActive);
+                });
+                
+                quoteWrapper.classList.remove('items-start', 'items-center', 'items-end', 'pt-8', 'pb-8');
+                
+                if (position === 'start') {
+                    quoteWrapper.classList.add('items-start', 'pt-8');
+                } else if (position === 'end') {
+                    quoteWrapper.classList.add('items-end', 'pb-8');
+                } else { // center
+                    quoteWrapper.classList.add('items-center');
+                }
+            }
+
             function setRatio(ratio) {
                 currentRatio = ratio;
                 ratioButtons.forEach(btn => {
@@ -462,52 +467,10 @@
                 setTimeout(autoAdjustQuoteFontSize, 50);
             }
 
-            // --- Drag and Drop Functions ---
-            function dragStart(e) {
-                if (e.target === previewQuote) {
-                    isDragging = true;
-                    previewQuote.classList.remove('cursor-grab');
-                    previewQuote.classList.add('cursor-grabbing');
-                    const eventX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-                    const eventY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-                    previewQuote.style.transform = 'none';
-                    dragOffsetX = eventX - previewQuote.offsetLeft;
-                    dragOffsetY = eventY - previewQuote.offsetTop;
-                }
-            }
-
-            function dragEnd(e) {
-                if(isDragging) {
-                    isDragging = false;
-                    previewQuote.classList.add('cursor-grab');
-                    previewQuote.classList.remove('cursor-grabbing');
-                    hasBeenDragged = true;
-                    resetPositionBtn.classList.remove('hidden');
-                }
-            }
-
-            function drag(e) {
-                if (isDragging) {
-                    e.preventDefault();
-                    const eventX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-                    const eventY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-                    const wrapperRect = quoteWrapper.getBoundingClientRect();
-                    let newX = eventX - wrapperRect.left - dragOffsetX;
-                    let newY = eventY - wrapperRect.top - dragOffsetY;
-                    const maxX = wrapperRect.width - previewQuote.offsetWidth;
-                    const maxY = wrapperRect.height - previewQuote.offsetHeight;
-                    newX = Math.max(0, Math.min(newX, maxX));
-                    newY = Math.max(0, Math.min(newY, maxY));
-                    previewQuote.style.left = `${newX}px`;
-                    previewQuote.style.top = `${newY}px`;
-                }
-            }
-
             // --- Event Listeners ---
             quoteInput.addEventListener('input', () => { 
                 updatePreview(); 
                 updateCharCounter();
-                centerQuote();
             });
             hashtagInput.addEventListener('input', updatePreview);
             locationInput.addEventListener('input', updatePreview);
@@ -543,15 +506,15 @@
             styleButtons.forEach(btn => btn.addEventListener('click', () => setBackgroundStyle(btn.dataset.style)));
             ratioButtons.forEach(btn => btn.addEventListener('click', () => setRatio(btn.id.replace('ratio-', ''))));
             fontSelect.addEventListener('change', (e) => setFontStyle(e.target.value));
-            resetPositionBtn.addEventListener('click', centerQuote);
+            
+            positionButtons.forEach(btn => btn.addEventListener('click', () => {
+                setTextPosition(btn.dataset.position);
+            }));
 
             fontSizeSlider.addEventListener('input', (e) => {
                 const newSize = e.target.value;
                 previewQuote.style.fontSize = `${newSize}px`;
                 fontSizeValue.textContent = `${newSize}px`;
-                if (!hasBeenDragged) {
-                    centerQuote();
-                }
             });
 
             bgUploadBtn.addEventListener('click', () => bgUploadInput.click());
@@ -597,14 +560,6 @@
                     downloadBtn.disabled = false;
                 }
             });
-            
-            // Drag and Drop Event Listeners
-            quoteWrapper.addEventListener('mousedown', dragStart);
-            document.addEventListener('mouseup', dragEnd);
-            document.addEventListener('mousemove', drag);
-            quoteWrapper.addEventListener('touchstart', dragStart, { passive: false });
-            document.addEventListener('touchend', dragEnd);
-            document.addEventListener('touchmove', drag, { passive: false });
 
             // --- Initial Setup Call ---
             setInterval(updateTimestamp, 60000);
@@ -614,6 +569,7 @@
             setBackgroundStyle('solid');
             setFontStyle('font-dm-sans');
             setRatio('1-1');
+            setTextPosition('center');
         });
     </script>
 </body>
