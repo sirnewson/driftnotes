@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Roboto:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Merriweather:wght@400;700&family=Lora:wght@400;700&family=Lobster&family=Pacifico&family=Caveat&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -20,7 +20,7 @@
         .aspect-9-16 { aspect-ratio: 9 / 16; }
 
         /* Transitions for all interactive elements */
-        #preview-area, #preview-container, .color-swatch, .style-btn, .theme-btn, .ratio-btn {
+        #preview-area, #preview-container, .color-swatch, .style-btn, .theme-btn, .ratio-btn, .font-btn {
             transition: all 0.3s ease-in-out;
         }
         
@@ -41,8 +41,8 @@
             padding: 12px;
             box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
             border: 2px solid #444;
-            transition: max-width 0.3s ease-in-out;
-            max-width: 400px; /* Default max-width */
+            width: 100%; /* Ensures the mockup takes up the available space */
+            max-width: 400px; /* Caps the maximum size */
         }
         .phone-screen {
             background: #000;
@@ -54,10 +54,66 @@
         .bg-sunset { background-image: linear-gradient(to top right, #ff7e5f, #feb47b); }
         .bg-ocean { background-image: linear-gradient(to top right, #00c6ff, #0072ff); }
         .bg-galaxy { background-image: linear-gradient(to top right, #3a1c71, #d76d77, #ffaf7b); }
+        .bg-lush { background-image: linear-gradient(to top right, #56ab2f, #a8e063); }
+        .bg-dusk { background-image: linear-gradient(to top right, #2c3e50, #fd746c); }
+
+        /* Draggable Text Styles */
+        #preview-quote {
+            position: absolute;
+            touch-action: none; /* Prevents scrolling on touch devices while dragging */
+            padding: 1rem; /* Add some padding for easier grabbing */
+            width: 90%; /* Forces the text to occupy a wider area, reducing line breaks */
+        }
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+
+        /* Font Family Classes */
+        .font-dm-sans { font-family: 'DM Sans', sans-serif; }
+        .font-playfair-display { font-family: 'Playfair Display', serif; }
+        .font-dancing-script { font-family: 'Dancing Script', cursive; }
+        .font-roboto { font-family: 'Roboto', sans-serif; }
+        .font-lato { font-family: 'Lato', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        .font-merriweather { font-family: 'Merriweather', serif; }
+        .font-lora { font-family: 'Lora', serif; }
+        .font-lobster { font-family: 'Lobster', cursive; }
+        .font-pacifico { font-family: 'Pacifico', cursive; }
+        .font-caveat { font-family: 'Caveat', cursive; }
+
+
+        /* Custom Color Picker Style */
+        .color-picker-wrapper {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #a1a1aa; /* neutral-400 */
+            background-image: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+        }
+        .color-picker-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        /* Custom Select Dropdown */
+        .custom-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
 
     </style>
 </head>
-<body class="text-white antialiased flex items-center justify-center min-h-screen p-4">
+<body class="text-white antialiased flex flex-col items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-5xl mx-auto">
         <!-- Header -->
@@ -77,7 +133,8 @@
                     <!-- Quote Input -->
                     <div class="mb-4">
                         <div class="flex justify-between items-center mb-2">
-                            <label for="quote-input" class="block text-sm font-medium text-gray-300">Quote</label>
+                             <label for="quote-input" class="block text-sm font-medium text-gray-300">Quote</label>
+                             <button id="reset-position-btn" class="text-xs text-blue-400 hover:text-blue-300 transition hidden">Reset Position</button>
                             <span id="char-counter" class="text-sm text-gray-500">0/100</span>
                         </div>
                         <textarea id="quote-input" rows="4" maxlength="100" class="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Sometimes fear is a result of your courage."></textarea>
@@ -103,6 +160,8 @@
                              <button class="style-btn w-8 h-8 rounded-full border-2 border-neutral-600 bg-sunset" data-style="bg-sunset"></button>
                              <button class="style-btn w-8 h-8 rounded-full border-2 border-neutral-600 bg-ocean" data-style="bg-ocean"></button>
                              <button class="style-btn w-8 h-8 rounded-full border-2 border-neutral-600 bg-galaxy" data-style="bg-galaxy"></button>
+                             <button class="style-btn w-8 h-8 rounded-full border-2 border-neutral-600 bg-lush" data-style="bg-lush"></button>
+                             <button class="style-btn w-8 h-8 rounded-full border-2 border-neutral-600 bg-dusk" data-style="bg-dusk"></button>
                              <input type="file" id="bg-upload-input" accept="image/*" class="hidden">
                              <button id="bg-upload-btn" class="w-8 h-8 rounded-full border-2 border-dashed border-neutral-600 flex items-center justify-center text-neutral-400 hover:bg-neutral-700 hover:text-white transition" title="Upload Custom Background">
                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
@@ -116,25 +175,64 @@
                     <!-- Background Color Selector -->
                     <div class="mb-4" id="solid-color-controls">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Solid Color</label>
-                        <div id="color-palette-bg" class="flex gap-3 flex-wrap">
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600 active" style="background-color: #141111;" data-color="#141111"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #542426;" data-color="#542426"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #381559;" data-color="#381559"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #5709A0;" data-color="#5709A0"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #C5911E;" data-color="#C5911E"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #4a5568;" data-color="#4a5568"></button>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600 active" style="background-color: #141111;" data-color="#141111"></button>
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #542426;" data-color="#542426"></button>
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #381559;" data-color="#381559"></button>
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #5709A0;" data-color="#5709A0"></button>
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #C5911E;" data-color="#C5911E"></button>
+                            <button class="color-swatch bg-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #4a5568;" data-color="#4a5568"></button>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="bg-color-picker" class="color-picker-input" value="#141111">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Text Color Selector -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Text Color</label>
-                        <div id="color-palette-text" class="flex gap-3 flex-wrap">
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600 active" style="background-color: #ffffff;" data-color="#ffffff"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #cbd5e1;" data-color="#cbd5e1"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #1e293b;" data-color="#1e293b"></button>
-                            <button class="color-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #000000;" data-color="#000000"></button>
+                        <div class="flex gap-3 flex-wrap items-center">
+                            <button class="color-swatch text-swatch w-8 h-8 rounded-full border-2 border-neutral-600 active" style="background-color: #ffffff;" data-color="#ffffff"></button>
+                            <button class="color-swatch text-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #cbd5e1;" data-color="#cbd5e1"></button>
+                            <button class="color-swatch text-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #1e293b;" data-color="#1e293b"></button>
+                            <button class="color-swatch text-swatch w-8 h-8 rounded-full border-2 border-neutral-600" style="background-color: #000000;" data-color="#000000"></button>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="text-color-picker" class="color-picker-input" value="#ffffff">
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Font Style Selector -->
+                    <div class="mb-4">
+                        <label for="font-select" class="block text-sm font-medium text-gray-300 mb-2">Font Style</label>
+                        <select id="font-select" class="custom-select w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <optgroup label="Sans Serif">
+                                <option value="font-dm-sans" selected>DM Sans</option>
+                                <option value="font-roboto">Roboto</option>
+                                <option value="font-lato">Lato</option>
+                                <option value="font-montserrat">Montserrat</option>
+                            </optgroup>
+                            <optgroup label="Serif">
+                                <option value="font-playfair-display">Playfair Display</option>
+                                <option value="font-merriweather">Merriweather</option>
+                                <option value="font-lora">Lora</option>
+                            </optgroup>
+                            <optgroup label="Display & Script">
+                                <option value="font-dancing-script">Dancing Script</option>
+                                <option value="font-lobster">Lobster</option>
+                                <option value="font-pacifico">Pacifico</option>
+                                <option value="font-caveat">Caveat</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Font Size Slider -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="font-size-slider" class="block text-sm font-medium text-gray-300">Font Size</label>
+                            <span id="font-size-value" class="text-sm text-gray-500">28px</span>
+                        </div>
+                        <input type="range" id="font-size-slider" min="10" max="50" class="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer">
                     </div>
 
                     <!-- Aspect Ratio Selector -->
@@ -149,7 +247,7 @@
                 </div>
                 <!-- Download Button -->
                 <div class="mt-auto pt-4">
-                    <button id="download-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    <button id="download-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                         Download Note
                     </button>
                 </div>
@@ -159,27 +257,32 @@
             <div id="preview-area" class="w-full lg:w-3/5 flex items-center justify-center">
                 <div class="phone-mockup">
                     <div class="phone-screen">
-                        <div id="preview-container" class="w-full h-full aspect-1-1 rounded-2xl shadow-2xl flex flex-col p-10" style="background-color: #141111; background-size: cover; background-position: center;">
+                        <!-- The main container for the note content -->
+                        <div id="preview-container" class="w-full flex flex-col aspect-1-1 rounded-2xl shadow-2xl p-10" style="background-size: cover; background-position: center;">
                             
                             <!-- Header -->
-                            <div id="preview-header" class="flex items-center justify-center w-full mb-auto font-mono opacity-70" style="font-size: 10px;">
-                                <span class="font-bold tracking-widest" style="color: #ffffff;">DRIFT NOTE</span>
+                            <div id="preview-header" class="text-center w-full font-mono opacity-70" style="font-size: 10px;">
+                                <span class="font-bold tracking-widest">DRIFT NOTE</span>
                                 <span class="mx-2">|</span>
-                                <span id="preview-date" style="color: #ffffff;"></span>
-                                <span id="preview-time" class="tracking-widest ml-1" style="color: #ffffff;"></span>
+                                <span id="preview-date"></span>
+                                <span id="preview-time" class="tracking-widest ml-1"></span>
                             </div>
                             
-                            <!-- Quote Text -->
-                            <p id="preview-quote" class="font-medium leading-snug my-auto text-center" style="color: #ffffff;"></p>
+                            <!-- Wrapper for the quote, allows it to grow and be a reference for dragging -->
+                            <div id="quote-wrapper" class="relative flex-grow flex items-center justify-center">
+                                <p id="preview-quote" class="font-medium leading-snug text-center cursor-grab font-dm-sans"></p>
+                            </div>
 
-                            <!-- Footer: Hashtag and Location -->
-                            <div id="preview-footer" class="flex items-center justify-center mt-auto text-xs gap-2">
-                                <span id="preview-hashtag" class="font-sans font-medium" style="color: #ffffff;">#motivation</span>
-                                <span class="opacity-70">|</span>
-                                <span id="location-group" class="flex items-center gap-1 font-sans font-medium">
-                                    <svg id="location-pin" xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-                                    <span id="preview-location" style="color: #ffffff;">The Universe</span>
-                                </span>
+                            <!-- Footer -->
+                            <div id="preview-footer" class="text-center w-full text-xs">
+                                 <div class="flex items-center justify-center gap-2">
+                                    <span id="preview-hashtag" class="font-sans font-medium">#motivation</span>
+                                    <span class="opacity-70">|</span>
+                                    <span id="location-group" class="flex items-center gap-1 font-sans font-medium">
+                                        <svg id="location-pin" xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                                        <span id="preview-location">The Universe</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -187,6 +290,10 @@
             </div>
         </div>
     </div>
+
+    <footer class="w-full text-center text-gray-500 text-xs mt-8 pb-4">
+        <p>Created by <a href="http://sirnewson.com" target="_blank" class="hover:text-white transition">Sir Newson</a></p>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -199,8 +306,15 @@
             const bgUploadInput = document.getElementById('bg-upload-input');
             const bgUploadBtn = document.getElementById('bg-upload-btn');
             const bgClearBtn = document.getElementById('bg-clear-btn');
+            const resetPositionBtn = document.getElementById('reset-position-btn');
+            const bgColorPicker = document.getElementById('bg-color-picker');
+            const textColorPicker = document.getElementById('text-color-picker');
+            const fontSelect = document.getElementById('font-select');
+            const fontSizeSlider = document.getElementById('font-size-slider');
+            const fontSizeValue = document.getElementById('font-size-value');
 
             const previewContainer = document.getElementById('preview-container');
+            const quoteWrapper = document.getElementById('quote-wrapper');
             const previewQuote = document.getElementById('preview-quote');
             const previewDate = document.getElementById('preview-date');
             const previewTime = document.getElementById('preview-time');
@@ -212,15 +326,22 @@
             const solidColorControls = document.getElementById('solid-color-controls');
 
             const ratioButtons = document.querySelectorAll('.ratio-btn');
-            const bgColorSwatches = document.querySelectorAll('#color-palette-bg .color-swatch');
-            const textColorSwatches = document.querySelectorAll('#color-palette-text .color-swatch');
+            const bgColorSwatches = document.querySelectorAll('.bg-swatch');
+            const textColorSwatches = document.querySelectorAll('.text-swatch');
             const styleButtons = document.querySelectorAll('.style-btn');
 
             // --- State ---
             let currentSolidColor = '#141111';
             let currentRatio = '1-1';
+            
+            // --- Draggable Text State ---
+            let isDragging = false;
+            let hasBeenDragged = false;
+            let dragOffsetX = 0;
+            let dragOffsetY = 0;
 
             // --- Functions ---
+            
             function updateTimestamp() {
                 const now = new Date();
                 const day = now.toDateString().slice(0, 3).toUpperCase();
@@ -229,18 +350,35 @@
                 previewTime.textContent = time;
             }
 
-            function adjustQuoteFontSize() {
-                let maxFontSize;
-                if (currentRatio === '9-16') maxFontSize = 26;
-                else if (currentRatio === '4-5') maxFontSize = 24;
-                else maxFontSize = 22;
+            function centerQuote() {
+                previewQuote.style.position = 'absolute';
+                previewQuote.style.left = '50%';
+                previewQuote.style.top = '50%';
+                previewQuote.style.transform = 'translate(-50%, -50%)';
+                hasBeenDragged = false;
+                resetPositionBtn.classList.add('hidden');
+            }
 
-                previewQuote.style.fontSize = `${maxFontSize}px`;
+            function autoAdjustQuoteFontSize() {
+                let fontSize = 28; 
+                previewQuote.style.fontSize = `${fontSize}px`;
 
-                const availableHeight = previewContainer.clientHeight - previewHeader.offsetHeight - previewFooter.offsetHeight - 40; // 40px buffer
+                const containerWidth = quoteWrapper.clientWidth - 32;
+                const containerHeight = quoteWrapper.clientHeight - 32;
 
-                while (previewQuote.scrollHeight > availableHeight && parseFloat(previewQuote.style.fontSize) > 10) {
-                    previewQuote.style.fontSize = `${parseFloat(previewQuote.style.fontSize) - 1}px`;
+                while (
+                    (previewQuote.scrollWidth > containerWidth || previewQuote.scrollHeight > containerHeight) &&
+                    fontSize > 10
+                ) {
+                    fontSize--;
+                    previewQuote.style.fontSize = `${fontSize}px`;
+                }
+                
+                fontSizeSlider.value = fontSize;
+                fontSizeValue.textContent = `${fontSize}px`;
+
+                if (!hasBeenDragged) {
+                    setTimeout(centerQuote, 0);
                 }
             }
 
@@ -249,7 +387,7 @@
                 const hashtagText = hashtagInput.value.trim();
                 previewHashtag.textContent = hashtagText ? `#${hashtagText}` : `#${hashtagInput.placeholder}`;
                 previewLocation.textContent = locationInput.value.trim() || locationInput.placeholder;
-                adjustQuoteFontSize();
+                autoAdjustQuoteFontSize();
                 updateTimestamp();
             }
 
@@ -261,42 +399,40 @@
             }
 
             function setTextColor(color) {
-                const elementsToColor = [previewQuote, previewLocation, previewDate, previewTime, locationPin, previewHashtag, previewHeader.querySelector('span')];
-                elementsToColor.forEach(el => {
-                    if (el) el.style.color = color;
-                });
-
+                previewHeader.style.color = color;
+                previewQuote.style.color = color;
+                previewFooter.style.color = color;
+                locationPin.style.fill = color;
                 textColorSwatches.forEach(swatch => {
                     swatch.classList.toggle('active', swatch.dataset.color === color);
                 });
             }
             
-            function setBackgroundColor(color) {
-                currentSolidColor = color;
-                previewContainer.style.backgroundColor = color;
-                bgColorSwatches.forEach(swatch => {
-                    swatch.classList.toggle('active', swatch.dataset.color === color);
+            function setBackgroundStyle(style) {
+                styleButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.style === style);
                 });
+                previewContainer.style.backgroundImage = '';
+                previewContainer.style.backgroundColor = '';
+                previewContainer.classList.remove('bg-sunset', 'bg-ocean', 'bg-galaxy', 'bg-lush', 'bg-dusk');
+                if (style === 'solid') {
+                    solidColorControls.style.display = 'block';
+                    previewContainer.style.backgroundColor = currentSolidColor;
+                } else {
+                    solidColorControls.style.display = 'none';
+                    previewContainer.classList.add(style);
+                }
             }
 
-            function setBackgroundStyle(style) {
-                 styleButtons.forEach(btn => {
-                     btn.classList.toggle('active', btn.dataset.style === style);
-                 });
-                 previewContainer.classList.remove('bg-sunset', 'bg-ocean', 'bg-galaxy');
-                 if (style === 'solid') {
-                     solidColorControls.style.display = 'block';
-                     previewContainer.style.backgroundImage = 'none';
-                     setBackgroundColor(currentSolidColor);
-                 } else {
-                     solidColorControls.style.display = 'none';
-                     previewContainer.classList.add(style);
-                 }
+            function setFontStyle(fontClass) {
+                const fontClasses = Array.from(fontSelect.options).map(opt => opt.value);
+                previewQuote.classList.remove(...fontClasses);
+                previewQuote.classList.add(fontClass);
+                setTimeout(autoAdjustQuoteFontSize, 50);
             }
 
             function setRatio(ratio) {
                 currentRatio = ratio;
-                // --- Button styles ---
                 ratioButtons.forEach(btn => {
                     btn.classList.toggle('bg-blue-600', btn.id.includes(ratio));
                     btn.classList.toggle('text-white', btn.id.includes(ratio));
@@ -304,8 +440,7 @@
                     btn.classList.toggle('text-gray-300', !btn.id.includes(ratio));
                 });
                 
-                // --- Aspect ratio & Padding ---
-                previewContainer.classList.remove('aspect-1-1', 'aspect-4-5', 'aspect-9-16', 'p-8', 'p-10');
+                previewContainer.classList.remove('aspect-1-1', 'aspect-4-5', 'aspect-9-16', 'p-10', 'p-8');
                 if (ratio === '9-16') {
                     previewContainer.classList.add('aspect-9-16', 'p-8');
                 } else if (ratio === '4-5') {
@@ -313,35 +448,107 @@
                 } else { // 1:1
                     previewContainer.classList.add('aspect-1-1', 'p-10');
                 }
-
-                // Adjust phone mockup size for better presentation
-                const phoneMockup = document.querySelector('.phone-mockup');
-                if (ratio === '9-16') {
-                    phoneMockup.style.maxWidth = '280px';
-                } else if (ratio === '4-5') {
-                    phoneMockup.style.maxWidth = '350px';
-                } else { // 1:1
-                    phoneMockup.style.maxWidth = '400px';
-                }
                 
-                setTimeout(adjustQuoteFontSize, 50);
+                setTimeout(autoAdjustQuoteFontSize, 50);
+            }
+
+            // --- Drag and Drop Functions ---
+            function dragStart(e) {
+                if (e.target === previewQuote) {
+                    isDragging = true;
+                    previewQuote.classList.remove('cursor-grab');
+                    previewQuote.classList.add('cursor-grabbing');
+                    const eventX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                    const eventY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                    previewQuote.style.transform = 'none';
+                    dragOffsetX = eventX - previewQuote.offsetLeft;
+                    dragOffsetY = eventY - previewQuote.offsetTop;
+                }
+            }
+
+            function dragEnd(e) {
+                if(isDragging) {
+                    isDragging = false;
+                    previewQuote.classList.add('cursor-grab');
+                    previewQuote.classList.remove('cursor-grabbing');
+                    hasBeenDragged = true;
+                    resetPositionBtn.classList.remove('hidden');
+                }
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    const eventX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                    const eventY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                    const wrapperRect = quoteWrapper.getBoundingClientRect();
+                    let newX = eventX - wrapperRect.left - dragOffsetX;
+                    let newY = eventY - wrapperRect.top - dragOffsetY;
+                    const maxX = quoteWrapper.clientWidth - previewQuote.offsetWidth;
+                    const maxY = quoteWrapper.clientHeight - previewQuote.offsetHeight;
+                    newX = Math.max(0, Math.min(newX, maxX));
+                    newY = Math.max(0, Math.min(newY, maxY));
+                    previewQuote.style.left = `${newX}px`;
+                    previewQuote.style.top = `${newY}px`;
+                }
             }
 
             // --- Event Listeners ---
+            quoteInput.addEventListener('input', () => { 
+                updatePreview(); 
+                updateCharCounter();
+                centerQuote();
+            });
             hashtagInput.addEventListener('input', updatePreview);
-            quoteInput.addEventListener('input', () => { updatePreview(); updateCharCounter(); });
             locationInput.addEventListener('input', updatePreview);
             
-            bgColorSwatches.forEach(swatch => swatch.addEventListener('click', () => setBackgroundColor(swatch.dataset.color)));
-            textColorSwatches.forEach(swatch => swatch.addEventListener('click', () => setTextColor(swatch.dataset.color)));
+            bgColorSwatches.forEach(swatch => swatch.addEventListener('click', () => {
+                const newColor = swatch.dataset.color;
+                currentSolidColor = newColor;
+                bgColorPicker.value = newColor;
+                bgColorSwatches.forEach(s => s.classList.toggle('active', s.dataset.color === newColor));
+                setBackgroundStyle('solid');
+            }));
+
+            bgColorPicker.addEventListener('input', (e) => {
+                const newColor = e.target.value;
+                currentSolidColor = newColor;
+                bgColorSwatches.forEach(s => s.classList.remove('active'));
+                setBackgroundStyle('solid');
+            });
+
+            textColorSwatches.forEach(swatch => swatch.addEventListener('click', () => {
+                const newColor = swatch.dataset.color;
+                textColorPicker.value = newColor;
+                setTextColor(newColor);
+            }));
+
+            textColorPicker.addEventListener('input', (e) => {
+                const newColor = e.target.value;
+                textColorSwatches.forEach(s => s.classList.remove('active'));
+                setTextColor(newColor);
+            });
+
             styleButtons.forEach(btn => btn.addEventListener('click', () => setBackgroundStyle(btn.dataset.style)));
             ratioButtons.forEach(btn => btn.addEventListener('click', () => setRatio(btn.id.replace('ratio-', ''))));
+            fontSelect.addEventListener('change', (e) => setFontStyle(e.target.value));
+            resetPositionBtn.addEventListener('click', centerQuote);
+
+            fontSizeSlider.addEventListener('input', (e) => {
+                const newSize = e.target.value;
+                previewQuote.style.fontSize = `${newSize}px`;
+                fontSizeValue.textContent = `${newSize}px`;
+                if (!hasBeenDragged) {
+                    centerQuote();
+                }
+            });
 
             bgUploadBtn.addEventListener('click', () => bgUploadInput.click());
             bgClearBtn.addEventListener('click', () => {
+                bgUploadInput.value = '';
                 previewContainer.style.backgroundImage = 'none';
                 bgClearBtn.classList.add('hidden');
-                setBackgroundStyle('solid'); // Revert to solid color mode
+                setBackgroundStyle('solid');
             });
 
             bgUploadInput.addEventListener('change', (e) => {
@@ -349,8 +556,8 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
+                        setBackgroundStyle('image');
                         previewContainer.style.backgroundImage = `url('${event.target.result}')`;
-                        solidColorControls.style.display = 'none';
                         styleButtons.forEach(btn => btn.classList.remove('active'));
                         bgClearBtn.classList.remove('hidden');
                     };
@@ -360,8 +567,10 @@
 
             downloadBtn.addEventListener('click', () => {
                 const node = document.getElementById('preview-container');
+                downloadBtn.textContent = 'Generating...';
+                downloadBtn.disabled = true;
                 html2canvas(node, {
-                    scale: 6, // Increased scale for "300 DPI" effect
+                    scale: 6,
                     useCORS: true, 
                     backgroundColor: null,
                 }).then(canvas => {
@@ -369,15 +578,31 @@
                     link.download = `drift-note-${Date.now()}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                }).catch(err => console.error("Oops, something went wrong!", err));
+                    downloadBtn.textContent = 'Download Note';
+                    downloadBtn.disabled = false;
+                }).catch(err => {
+                    console.error("Oops, something went wrong!", err);
+                    downloadBtn.textContent = 'Download Note';
+                    downloadBtn.disabled = false;
+                });
             });
+            
+            // Drag and Drop Event Listeners
+            quoteWrapper.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+            quoteWrapper.addEventListener('touchstart', dragStart, { passive: false });
+            document.addEventListener('touchend', dragEnd);
+            document.addEventListener('touchmove', drag, { passive: false });
 
             // --- Initial Setup Call ---
-            setInterval(updateTimestamp, 1000);
+            setInterval(updateTimestamp, 60000);
             updatePreview();
             updateCharCounter();
-            setTextColor('#ffffff'); // Set initial text color
-            setRatio('1-1'); // Set initial aspect ratio and font sizes
+            setTextColor('#ffffff');
+            setBackgroundStyle('solid');
+            setFontStyle('font-dm-sans');
+            setRatio('1-1');
         });
     </script>
 </body>
